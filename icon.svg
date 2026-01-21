@@ -1,0 +1,43 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- 底层阴影 -->
+  <ellipse cx="256" cy="460" rx="120" ry="20" fill="rgba(0,0,0,0.15)" />
+  
+  <!-- 日历主体形状 -->
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f9f5eb" />
+      <stop offset="100%" style="stop-color:#ece4d1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10" />
+      <feOffset dx="0" dy="10" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 整体圆角矩形 -->
+  <g filter="url(#shadow)">
+    <rect x="100" y="100" width="312" height="312" rx="40" fill="url(#bodyGrad)" />
+    
+    <!-- 红色页眉 -->
+    <path d="M100 140 c0 -22 18 -40 40 -40 h232 c22 0 40 18 40 40 v60 h-312 z" fill="#d34036" />
+    
+    <!-- 装饰环（左） -->
+    <rect x="160" y="70" width="24" height="60" rx="12" fill="#e0e0e0" stroke="#bcbcbc" stroke-width="2" />
+    <!-- 装饰环（右） -->
+    <rect x="328" y="70" width="24" height="60" rx="12" fill="#e0e0e0" stroke="#bcbcbc" stroke-width="2" />
+
+    <!-- 数字 7 -->
+    <text x="256" y="330" font-family="Arial, sans-serif" font-weight="900" font-size="160" fill="#333" text-anchor="middle">7</text>
+
+    <!-- 右下角卷角效果 -->
+    <path d="M372 412 h-40 c0 0 40 0 40 -40 z" fill="#d1c9b8" />
+    <path d="M412 372 v40 l-40 -40 z" fill="#e5ddd0" />
+  </g>
+</svg>

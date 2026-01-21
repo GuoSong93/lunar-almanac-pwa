@@ -1,15 +1,23 @@
 {
-  "name": "万年历",
-  "short_name": "万年历",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#b71c1c",
-  "theme_color": "#b71c1c",
-  "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/3652/3652191.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+	"name": "简约万年历",
+	"short_name": "万年历",
+	"description": "简约而不简单的万年历，支持离线查看。",
+	"start_url": "./index.html",
+	"display": "standalone",
+	"background_color": "#f0f2f5",
+	"theme_color": "#d34036",
+	"icons": [
+		{
+			"src": "icon.svg",
+			"sizes": "512x512",
+			"type": "image/svg+xml",
+			"purpose": "any"
+		},
+		{
+			"src": "icon.svg",
+			"sizes": "512x512",
+			"type": "image/svg+xml",
+			"purpose": "maskable"
+		}
+	]
 }
