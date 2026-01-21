@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>精致万年历 App</title>
+    
+    <!-- PWA 相关配置 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#b71c1c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3652/3652191.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+    
+    <style>
+        /* 复用之前的 CSS，增加一点移动端优化 */
+        :root {
+            --primary-color: #b71c1c; 
+            --active-bg: #2c3e50;    
+            --bg-light: #fdfdfd;
+            --text-main: #2c3e50;
+            --text-lunar: #7f8c8d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f0f2f5; 
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; 
+        }
+
+        .calendar-app {
+            display: flex; width: 960px; height: 640px; background: #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); border-radius: 20px; overflow: hidden;
+        }
+
+        .sidebar { width: 320px; background: var(--primary-color); color: #fff; padding: 30px; display: flex; flex-direction: column; }
+        .side-header { text-align: center; }
+        .big-day { font-size: 100px; font-weight: 800; line-height: 1; margin: 10px 0; }
+        .side-lunar-box { background: rgba(0,0,0,0.1); padding: 15px; border-radius: 12px; margin: 15px 0; line-height: 1.6; font-size: 0.9rem; }
+        .almanac-box { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
+        .almanac-item { display: flex; align-items: flex-start; gap: 10px; }
+        .almanac-item b { background: #fff; color: var(--primary-color); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; }
+        .almanac-item span { font-size: 13px; opacity: 0.9; }
+
+        .main-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; background: var(--bg-light); }
+        .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .nav-controls { display: flex; align-items: center; gap: 5px; }
+        select { border: 1px solid #ddd; padding: 5px; border-radius: 6px; font-size: 14px; }
+        .btn { padding: 6px 12px; border: 1px solid #ddd; background: #fff; border-radius: 6px; cursor: pointer; }
+        .btn-today { background: var(--primary-color); color: #fff; border: none; }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); flex: 1; border-top: 1px solid #eee; border-left: 1px solid #eee; }
+        .week-label { text-align: center; padding: 10px 0; color: #999; font-size: 12px; border-bottom: 1px solid #eee; border-right: 1px solid #eee; }
+        
+        .day-cell { border-right: 1px solid #eee; border-bottom: 1px solid #eee; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; }
+        .day-cell.other-month { opacity: 0.2; }
+        .day-cell.today::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; background: var(--primary-color); border-radius: 50%; }
+        .day-cell.active { background: var(--active-bg) !important; border-radius: 8px; transform: scale(0.9); z-index: 2; }
+        .day-cell.active .num, .day-cell.active .lunar-txt { color: #fff !important; }
+        .num { font-size: 18px; font-weight: 600; color: var(--text-main); }
+        .lunar-txt { font-size: 10px; color: var(--text-lunar); }
+        .fest { color: var(--primary-color); font-weight: bold; }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            body { align-items: flex-start; }
+            .calendar-app { flex-direction: column; width: 100%; height: 100vh; border-radius: 0; }
+            .sidebar { width: 100%; padding: 20px; height: auto; }
+            .big-day { font-size: 60px; }
+            .side-lunar-box { margin: 10px 0; }
+            .almanac-box { flex-direction: row; }
+            .calendar-grid { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="calendar-app">
+    <!-- UI 结构保持不变 -->
+    <div class="sidebar">
+        <div class="side-header">
+            <h2 id="sideFullDate">----年--月</h2>
+            <div class="big-day" id="sideBigDay">--</div>
+            <div id="sideWeek">---</div>
+        </div>
+        <div class="side-lunar-box" id="sideLunarDetail">加载中...</div>
+        <div class="almanac-box">
+            <div class="almanac-item"><b>宜</b><span id="sideYi">...</span></div>
+            <div class="almanac-item"><b>忌</b><span id="sideJi">...</span></div>
+        </div>
+    </div>
+    <div class="main-panel">
+        <div class="nav-bar">
+            <div class="nav-controls">
+                <button class="btn" onclick="changeMonth(-1)">◀</button>
+                <select id="yearSelect"></select>
+                <select id="monthSelect"></select>
+                <button class="btn" onclick="changeMonth(1)">▶</button>
+            </div>
+            <button class="btn btn-today" onclick="goToday()">今日</button>
+        </div>
+        <div class="calendar-grid" id="grid">
+            <div class="week-label">日</div><div class="week-label">一</div><div class="week-label">二</div>
+            <div class="week-label">三</div><div class="week-label">四</div><div class="week-label">五</div><div class="week-label">六</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 注册 Service Worker 实现离线功能
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('PWA 已就绪'))
+                .catch(err => console.log('PWA 失败', err));
+        });
+    }
+
+    // --- 以下是日历逻辑代码 (与上一版一致) ---
+    let viewYear, viewMonth, selectedDate;
+    function init() {
+        const now = new Date();
+        viewYear = now.getFullYear(); viewMonth = now.getMonth() + 1;
+        selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yS = document.getElementById('yearSelect');
+        const mS = document.getElementById('monthSelect');
+        for(let i=1900; i<=2100; i++) yS.add(new Option(i, i));
+        for(let i=1; i<=12; i++) mS.add(new Option(i, i));
+        yS.onchange = () => { viewYear = parseInt(yS.value); render(); };
+        mS.onchange = () => { viewMonth = parseInt(mS.value); render(); };
+        render();
+    }
+
+    function render() {
+        document.getElementById('yearSelect').value = viewYear;
+        document.getElementById('monthSelect').value = viewMonth;
+        const grid = document.getElementById('grid');
+        const labels = grid.querySelectorAll('.week-label');
+        grid.innerHTML = '';
+        labels.forEach(l => grid.appendChild(l));
+        const firstDay = new Date(viewYear, viewMonth - 1, 1);
+        const startDay = new Date(firstDay);
+        startDay.setDate(firstDay.getDate() - startDay.getDay());
+        for (let i = 0; i < 42; i++) {
+            const curr = new Date(startDay);
+            curr.setDate(startDay.getDate() + i);
+            const cell = document.createElement('div');
+            cell.className = 'day-cell';
+            if (curr.getMonth() + 1 !== viewMonth) cell.classList.add('other-month');
+            if (isSame(curr, new Date())) cell.classList.add('today');
+            if (isSame(curr, selectedDate)) cell.classList.add('active');
+            const solar = Solar.fromDate(curr);
+            const lunar = solar.getLunar();
+            const jq = lunar.getJieQi();
+            const fest = solar.getFestivals()[0] || lunar.getFestivals()[0];
+            const showTxt = jq || fest || lunar.getDayInChinese();
+            cell.innerHTML = `<div class="num">${curr.getDate()}</div><div class="lunar-txt ${jq || fest ? 'fest' : ''}">${showTxt}</div>`;
+            cell.onclick = () => { selectedDate = curr; render(); };
+            grid.appendChild(cell);
+        }
+        updateDetail();
+    }
+
+    function updateDetail() {
+        const s = Solar.fromDate(selectedDate);
+        const l = s.getLunar();
+        const eb = l.getEightChar();
+        document.getElementById('sideFullDate').innerText = `${s.getYear()}年 ${s.getMonth()}月`;
+        document.getElementById('sideBigDay').innerText = s.getDay().toString().padStart(2, '0');
+        document.getElementById('sideWeek').innerText = '星期' + s.getWeekInChinese();
+        document.getElementById('sideLunarDetail').innerHTML = `
+            农历 ${l.getMonthInChinese()}月 ${l.getDayInChinese()}<br>
+            ${l.getYearInGanZhi()}年 【${l.getYearShengXiao()}】<br>
+            ${eb.getYear()} ${eb.getMonth()} ${eb.getDay()}
+        `;
+        const yi = l.getDayYi(); const ji = l.getDayJi();
+        document.getElementById('sideYi').innerText = yi.length ? yi.slice(0,6).join(' · ') : '诸事不宜';
+        document.getElementById('sideJi').innerText = ji.length ? ji.slice(0,6).join(' · ') : '诸事皆宜';
+    }
+
+    function isSame(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate(); }
+    function changeMonth(n) { viewMonth += n; if(viewMonth > 12) { viewMonth = 1; viewYear++; } if(viewMonth < 1) { viewMonth = 12; viewYear--; } render(); }
+    function goToday() { const now = new Date(); viewYear = now.getFullYear(); viewMonth = now.getMonth() + 1; selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()); render(); }
+    window.onload = init;
+</script>
+</body>
+</html>
