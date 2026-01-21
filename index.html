@@ -2,186 +2,330 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>简约老黄历 - 农历与每日宜忌</title>
-    <meta name="description" content="一款极致简约的农历黄历 PWA 应用。支持离线查看、月份切换、干支纪年、每日宜忌及节气查询，秒开无广告。">
-    <meta name="theme-color" content="#B22222">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+    <title>时光万年历 - Time Calendar</title>
     
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary-red: #B22222;
-            --text-white: #FFFFFF;
-            --card-bg: rgba(255, 255, 255, 0.15);
+            --brand-red: #E64340;    /* 朱砂红 */
+            --bg-paper: #FBFBF2;     /* 宣纸色 */
+            --text-main: #2C3E50;    /* 玄青 */
+            --text-sub: #95A5A6;     /* 灰 */
+            --accent-gold: #F39C12;  /* 节气金 */
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
             margin: 0;
-            font-family: -apple-system, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
-            background-color: var(--primary-red);
-            color: var(--text-white);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
-        main {
-            width: 100%;
-            max-width: 480px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        /* 顶部详细展示区 */
-        .info-card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 24px;
-            text-align: center;
-            backdrop-filter: blur(12px);
-            margin-bottom: 24px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            min-height: 240px;
-        }
-        #solarDateDisplay { font-size: 1.1rem; opacity: 0.9; margin-bottom: 8px; }
-        #lunarDateDisplay { font-size: 2.8rem; font-weight: 800; margin: 12px 0; }
-        #ganzhiDisplay { font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 20px; opacity: 0.85; }
-        .yiji-container {
-            display: flex;
-            justify-content: space-around;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.2);
-        }
-        .yiji-group strong { display: block; font-size: 1.2rem; margin-bottom: 4px; }
-        .yiji-group span { font-size: 0.9rem; max-width: 140px; display: block; height: 3em; overflow: hidden; }
-
-        /* 日历控制 */
-        .cal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        button {
-            background: var(--card-bg);
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        button:active { background: rgba(255,255,255,0.3); }
-
-        /* 日历网格 */
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            background: var(--card-bg);
-            padding: 12px;
-            border-radius: 18px;
-            min-height: 340px;
-        }
-        .week-head { text-align: center; font-size: 0.75rem; opacity: 0.6; padding-bottom: 10px; }
-        .day-cell {
-            aspect-ratio: 1;
+            font-family: "PingFang SC", "Noto Sans CJK", sans-serif;
+            background-color: var(--bg-paper);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.2s;
         }
-        .day-cell .solar { font-size: 1.1rem; font-weight: 500; }
-        .day-cell .lunar { font-size: 0.65rem; opacity: 0.7; }
-        .day-cell.active { background: white; color: var(--primary-red); font-weight: bold; }
-        .day-cell.today { border: 1.5px solid rgba(255,255,255,0.6); }
-        .day-cell.other-month { opacity: 0.2; }
+
+        /* 顶部导航：绝对居中 */
+        header {
+            padding: calc(env(safe-area-inset-top) + 10px) 16px 5px;
+            display: flex;
+            align-items: center;
+            background: rgba(251, 251, 242, 0.9);
+            z-index: 10;
+        }
+        .header-side { flex: 1; display: flex; align-items: center; }
+        .header-side.right { justify-content: flex-end; }
+        .nav-btn { background: none; border: none; font-size: 1.5rem; color: var(--text-sub); cursor: pointer; padding: 0 10px; }
+        .nav-center { 
+            font-size: 1.15rem; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; gap: 4px; white-space: nowrap;
+        }
+        .nav-center::after { content: '▾'; font-size: 0.8rem; color: var(--brand-red); }
+        .today-tag { 
+            font-size: 0.75rem; padding: 3px 12px; border-radius: 12px;
+            border: 1.5px solid var(--brand-red); color: var(--brand-red);
+            background: none; cursor: pointer; font-weight: bold;
+        }
+
+        /* 日历：周一为首 */
+        .week-header {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            text-align: center; padding: 10px 0;
+            font-size: 0.75rem; color: var(--text-sub);
+        }
+        .calendar-container {
+            flex: 1; padding: 0 5px;
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            grid-auto-rows: 1fr;
+        }
+
+        /* 规格：18px / 14px */
+        .day-cell {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; cursor: pointer;
+        }
+        .day-cell .solar { font-family: 'Oswald', sans-serif; font-size: 18px; line-height: 1; z-index: 2; }
+        .day-cell .lunar { font-size: 14px; margin-top: 2px; color: var(--text-sub); z-index: 2; white-space: nowrap; overflow: hidden; max-width: 90%; }
+
+        .holiday-tag { position: absolute; top: 4px; right: 4px; font-size: 10px; font-weight: bold; z-index: 3; }
+        .tag-rest { color: var(--brand-red); }
+        .tag-work { color: #bdc3c7; }
+
+        /* 高亮：45px 圆形背景 */
+        .day-cell.active::before {
+            content: ''; position: absolute; width: 45px; height: 45px;
+            background: var(--brand-red); border-radius: 50%; z-index: 1;
+        }
+        .day-cell.active { color: #fff; }
+        .day-cell.active .lunar { color: rgba(255,255,255,0.9); }
+
+        /* 底部详情：50/50 比例 */
+        .drawer {
+            height: 35%; background: #fff;
+            border-top-left-radius: 24px; border-top-right-radius: 24px;
+            padding: 15px 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+            display: flex; overflow: hidden;
+        }
+        .drawer-left { flex: 1; border-right: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; padding-right: 15px; }
+        .drawer-right { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding-left: 15px; }
+
+        .solar-detail { font-size: 0.85rem; color: var(--text-sub); font-weight: 500; margin-bottom: 2px; }
+        .gz-detail { font-size: 0.8rem; color: var(--text-sub); }
+        .lunar-big { font-size: 1.5rem; font-weight: bold; color: var(--brand-red); margin: 2px 0; }
+        .term-countdown { font-size: 0.75rem; color: var(--accent-gold); background: #fff9e6; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 6px; font-weight: bold; }
+
+        .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 4px 0; }
+        .tag { font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; white-space: nowrap; }
+        .tag-yi { background: #eafaf1; color: #2ecc71; border: 1px solid #d4efdf; }
+        .tag-ji { background: #fdedec; color: #e74c3c; border: 1px solid #fadbd8; }
+        .section-label { font-size: 0.75rem; font-weight: bold; color: var(--text-sub); margin-bottom: 2px; }
+        .divider { width: 60%; border-top: 1px dashed #eee; margin: 8px 0; }
+
+        /* 选择器面板 */
+        #pickerOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; }
+        .picker-content { width: 100%; background: var(--bg-paper); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } }
+        .year-selector { display: flex; justify-content: center; align-items: center; gap: 30px; margin-bottom: 25px; }
+        .month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .month-btn { background: #fff; border: 1px solid #eee; padding: 12px 0; border-radius: 12px; text-align: center; font-size: 0.95rem; cursor: pointer; }
+        .month-btn.active { background: var(--brand-red); color: #fff; }
+
+        /* 沉浸模式 */
+        #immersiveMode { position: fixed; inset: 0; background: var(--bg-paper); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .imm-month { font-size: 1.4rem; font-weight: bold; color: var(--text-main); margin-bottom: 10px; letter-spacing: 1px; }
+        .imm-date { font-family: 'Oswald', sans-serif; font-size: 10rem; color: var(--brand-red); margin: -25px 0; }
+        .imm-lunar { font-size: 1.8rem; letter-spacing: 5px; font-weight: 300; }
+        .imm-quote { margin-top: 50px; color: var(--text-sub); font-style: italic; font-size: 0.95rem; width: 80%; text-align: center; line-height: 1.6; border-top: 1px solid #eee; padding-top: 20px; }
     </style>
 </head>
 <body>
-    <main>
-        <section class="info-card">
-            <div id="solarDateDisplay">正在加载日历...</div>
-            <div id="lunarDateDisplay">--</div>
-            <div id="ganzhiDisplay">--</div>
-            <div class="yiji-container">
-                <div class="yiji-group"><strong style="color: #90EE90;">宜</strong><span id="yiDisplay"></span></div>
-                <div class="yiji-group"><strong style="color: #FFB6C1;">忌</strong><span id="jiDisplay"></span></div>
+
+    <header>
+        <div class="header-side">
+            <button class="nav-btn" onclick="moveMonth(-1)">‹</button>
+        </div>
+        <div class="nav-center" onclick="togglePicker(true)">
+            <span id="monthYearTitle">2026年1月</span>
+        </div>
+        <div class="header-side right">
+            <button class="today-tag" onclick="goToday()">今天</button>
+            <button class="nav-btn" onclick="moveMonth(1)">›</button>
+        </div>
+    </header>
+
+    <div class="week-header">
+        <div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div>日</div>
+    </div>
+
+    <div class="calendar-container" id="calendarGrid"></div>
+
+    <div class="drawer">
+        <div class="drawer-left">
+            <div id="solarDetail" class="solar-detail">2026年1月21日</div>
+            <div id="gzInfo" class="gz-detail">--</div>
+            <div id="lunarBig" class="lunar-big">--</div>
+            <div id="sxInfo" style="font-size:0.85rem">--</div>
+            <div id="termCountdown" class="term-countdown">加载中...</div>
+        </div>
+        <div class="drawer-right">
+            <div class="section-label">宜</div>
+            <div id="yiCloud" class="tag-cloud"></div>
+            <div class="divider"></div>
+            <div class="section-label">忌</div>
+            <div id="jiCloud" class="tag-cloud"></div>
+        </div>
+    </div>
+
+    <div id="pickerOverlay" onclick="togglePicker(false)">
+        <div class="picker-content" onclick="event.stopPropagation()">
+            <div class="year-selector">
+                <button onclick="changeYear(-1)" style="border:none; background:none; font-size:1.5rem">‹</button>
+                <div style="font-family:'Oswald'; font-size:1.8rem; font-weight:bold" id="pickerYear">2026</div>
+                <button onclick="changeYear(1)" style="border:none; background:none; font-size:1.5rem">›</button>
             </div>
-        </section>
-
-        <nav class="cal-header">
-            <button onclick="moveMonth(-1)" aria-label="上个月">上个月</button>
-            <h2 id="currentMonthYear" style="margin:0; font-size:1.2rem;">2024年 1月</h2>
-            <button onclick="moveMonth(1)" aria-label="下个月">下个月</button>
-        </nav>
-
-        <div class="calendar-grid" id="calendarGrid">
-            <div class="week-head">日</div><div class="week-head">一</div><div class="week-head">二</div>
-            <div class="week-head">三</div><div class="week-head">四</div><div class="week-head">五</div><div class="week-head">六</div>
+            <div class="month-grid" id="monthGrid"></div>
+            <button onclick="togglePicker(false)" style="width:100%; margin-top:20px; padding:12px; border:none; background:#eee; border-radius:12px; font-weight:bold">取消</button>
         </div>
+    </div>
 
-        <div style="text-align: center; margin-top: 20px;">
-            <button onclick="resetToToday()" style="background: white; color: var(--primary-red); font-weight: bold;">回到今天</button>
-        </div>
-    </main>
+    <div id="immersiveMode" onclick="this.style.display='none'">
+        <div class="imm-month" id="immMonth">2026年1月</div>
+        <div class="imm-date" id="immSolar">21</div>
+        <div class="imm-lunar" id="immLunar">腊月初三</div>
+        <div class="imm-quote" id="immQuote">生活温暖，日子发光。</div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js" defer></script>
-    <script defer>
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+    <script>
         let viewDate = new Date();
         let selectedDate = new Date();
+        let pickerYear = viewDate.getFullYear();
+        let lastClickTime = 0;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const checkReady = setInterval(() => {
-                if (typeof Lunar !== 'undefined') {
-                    clearInterval(checkReady);
-                    render();
-                    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
-                }
-            }, 50);
-        });
+        const warmQuotes = [
+            "生活温暖，日子发光。", "岁月漫长，值得期待。", "愿你眼里有光，心中有爱。", "万物可爱，人间值得。",
+            "日子清净，抬头皆是温柔。", "心中有暖，何惧冬长。", "做最好的自己，等最好的日子。", "且将新火试新茶，诗酒趁年华。"
+        ];
+
+        window.onload = function() {
+            if (typeof Lunar === 'undefined') return;
+            initMonthGrid();
+            render();
+            initSwipe();
+        };
 
         function render() {
-            // 更新详情
-            const solar = Solar.fromDate(selectedDate);
-            const lunar = Lunar.fromDate(selectedDate);
-            document.getElementById('solarDateDisplay').innerText = `${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日 星期${solar.getWeekInChinese()}`;
-            document.getElementById('lunarDateDisplay').innerText = `${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
-            document.getElementById('ganzhiDisplay').innerText = `${lunar.getYearInGanZhi()}年 · ${lunar.getMonthInGanZhi()}月 · ${lunar.getDayInGanZhi()}日`;
-            document.getElementById('yiDisplay').innerText = lunar.getDayYi().slice(0, 5).join(' ') || '诸事不宜';
-            document.getElementById('jiDisplay').innerText = lunar.getDayJi().slice(0, 5).join(' ') || '诸事无忌';
-
-            // 更新日历
             const grid = document.getElementById('calendarGrid');
-            const heads = Array.from(grid.querySelectorAll('.week-head'));
+            if (!grid) return;
             grid.innerHTML = '';
-            heads.forEach(h => grid.appendChild(h));
-
+            
             const y = viewDate.getFullYear(), m = viewDate.getMonth();
-            document.getElementById('currentMonthYear').innerText = `${y}年 ${m + 1}月`;
-
-            const firstDay = new Date(y, m, 1).getDay();
+            document.getElementById('monthYearTitle').innerText = `${y}年${m + 1}月`;
+            
+            let firstDay = new Date(y, m, 1).getDay(); 
+            let offset = (firstDay === 0) ? 6 : firstDay - 1;
             const daysInMonth = new Date(y, m + 1, 0).getDate();
-            const today = new Date();
 
-            for (let i = 0; i < firstDay; i++) grid.appendChild(Object.assign(document.createElement('div'), {className: 'day-cell other-month'}));
+            for (let i = 0; i < offset; i++) grid.appendChild(document.createElement('div'));
 
             for (let d = 1; d <= daysInMonth; d++) {
-                const dateObj = new Date(y, m, d);
-                const l = Lunar.fromDate(dateObj);
+                const date = new Date(y, m, d);
+                const l = Lunar.fromDate(date);
                 const cell = document.createElement('div');
-                cell.className = `day-cell ${isSame(dateObj, selectedDate) ? 'active' : ''} ${isSame(dateObj, today) ? 'today' : ''}`;
-                const lunarTxt = l.getDayInChinese() === '初一' ? l.getMonthInChinese()+'月' : l.getDayInChinese();
-                cell.innerHTML = `<span class="solar">${d}</span><span class="lunar">${lunarTxt}</span>`;
-                cell.onclick = () => { selectedDate = dateObj; render(); };
+                cell.className = 'day-cell' + (isSame(date, selectedDate) ? ' active' : '');
+                
+                const jq = l.getJieQi();
+                const fest = l.getFestivals()[0] || jq || l.getDayInChinese();
+                const isHighlight = (jq || l.getFestivals()[0]) ? 'style="color:var(--accent-gold); font-weight:bold;"' : '';
+                const h = HolidayUtil.getHoliday(y, m + 1, d);
+                let holidayHtml = h ? `<span class="holiday-tag ${h.isWork()?'tag-work':'tag-rest'}">${h.isWork()?'班':'休'}</span>` : '';
+
+                cell.innerHTML = `${holidayHtml}<span class="solar">${d}</span><span class="lunar" ${isHighlight}>${fest}</span>`;
+                
+                cell.onclick = function() {
+                    const now = Date.now();
+                    if (now - lastClickTime < 300) showImmersive(date);
+                    else { selectedDate = new Date(date); render(); }
+                    lastClickTime = now;
+                };
                 grid.appendChild(cell);
             }
+            updateDrawer();
+        }
+
+        function updateDrawer() {
+            const l = Lunar.fromDate(selectedDate);
+            document.getElementById('solarDetail').innerText = `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`;
+            document.getElementById('gzInfo').innerText = `${l.getYearInGanZhi()}年 · ${l.getMonthInGanZhi()}月 · ${l.getDayInGanZhi()}日`;
+            document.getElementById('lunarBig').innerText = `${l.getMonthInChinese()}月${l.getDayInChinese()}`;
+            document.getElementById('sxInfo').innerText = `生肖属${l.getYearShengXiao()}`;
+            
+            const renderTags = (id, tags, css) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = '';
+                tags.slice(0, 3).forEach(t => {
+                    const s = document.createElement('span'); s.className = 'tag ' + css; s.innerText = t;
+                    el.appendChild(s);
+                });
+            };
+            renderTags('yiCloud', l.getDayYi(), 'tag-yi');
+            renderTags('jiCloud', l.getDayJi(), 'tag-ji');
+
+            calculateTermCountdown(selectedDate);
+        }
+
+        function calculateTermCountdown(target) {
+            const el = document.getElementById('termCountdown');
+            if (!el) return;
+            const d1 = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+            let next = null;
+            try {
+                for (let y of [d1.getFullYear(), d1.getFullYear() + 1]) {
+                    const table = Lunar.fromYmd(y, 1, 1).getJieQiTable();
+                    for (let name in table) {
+                        let val = table[name];
+                        let tDate;
+                        if (typeof val === 'string') tDate = new Date(val.replace(/-/g, '/'));
+                        else tDate = new Date(val.toString().replace(/-/g, '/'));
+                        if (!isNaN(tDate.getTime())) {
+                            let d2 = new Date(tDate.getFullYear(), tDate.getMonth(), tDate.getDate());
+                            if (d2 > d1 && (!next || tDate < next.date)) {
+                                next = { name, date: tDate };
+                            }
+                        }
+                    }
+                }
+                if (next) {
+                    const d2 = new Date(next.date.getFullYear(), next.date.getMonth(), next.date.getDate());
+                    const diff = Math.round((d2 - d1) / 86400000);
+                    el.innerText = `距离 [${next.name}] 还有 ${diff} 天`;
+                } else {
+                    el.innerText = "--";
+                }
+            } catch (e) { el.innerText = "--"; }
+        }
+
+        function showImmersive(date) {
+            const l = Lunar.fromDate(date);
+            const imm = document.getElementById('immersiveMode');
+            document.getElementById('immMonth').innerText = `${date.getFullYear()}年${date.getMonth() + 1}月`;
+            document.getElementById('immSolar').innerText = date.getDate();
+            document.getElementById('immLunar').innerText = `${l.getMonthInChinese()}月${l.getDayInChinese()}`;
+            document.getElementById('immQuote').innerText = warmQuotes[Math.floor(Math.random() * warmQuotes.length)];
+            imm.style.display = 'flex';
         }
 
         function moveMonth(s) { viewDate.setMonth(viewDate.getMonth() + s); render(); }
-        function resetToToday() { viewDate = new Date(); selectedDate = new Date(); render(); }
+        function goToday() { viewDate = new Date(); selectedDate = new Date(); render(); }
+        function togglePicker(s) { document.getElementById('pickerOverlay').style.display = s ? 'flex' : 'none'; if(s) { pickerYear = viewDate.getFullYear(); updatePickerUI(); } }
+        function changeYear(s) { pickerYear += s; updatePickerUI(); }
+        
+        function initMonthGrid() {
+            const g = document.getElementById('monthGrid');
+            for(let i=1; i<=12; i++) {
+                const b = document.createElement('div'); b.className = 'month-btn'; b.innerText = i + '月';
+                b.onclick = () => { viewDate = new Date(pickerYear, i-1, 1); render(); togglePicker(false); };
+                g.appendChild(b);
+            }
+        }
+
+        function updatePickerUI() {
+            document.getElementById('pickerYear').innerText = pickerYear;
+            document.querySelectorAll('.month-btn').forEach((b, i) => b.classList.toggle('active', i === viewDate.getMonth() && pickerYear === viewDate.getFullYear()));
+        }
+
+        function initSwipe() {
+            let startX = 0;
+            const c = document.getElementById('calendarGrid');
+            c.ontouchstart = e => startX = e.touches[0].clientX;
+            c.ontouchend = e => { let diff = e.changedTouches[0].clientX - startX; if(Math.abs(diff)>50) moveMonth(diff>0?-1:1); };
+        }
+
         function isSame(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate(); }
     </script>
 </body>
