@@ -2,25 +2,19 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 优化1：允许用户缩放，提升无障碍分数 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>简约老黄历 - 农历与每日宜忌</title>
-    
-    <!-- 优化2：添加 SEO 描述 -->
-    <meta name="description" content="一个简洁、轻快的农历老黄历 PWA 应用。支持离线查看农历日期、节气、干支及每日宜忌，无广告，秒开体验。">
+    <meta name="description" content="一款极致简约的农历黄历 PWA 应用。支持离线查看、月份切换、干支纪年、每日宜忌及节气查询，秒开无广告。">
     <meta name="theme-color" content="#B22222">
     
     <link rel="manifest" href="manifest.json">
-	<!-- iOS 专用图标 (建议使用 SVG 或者导出的 PNG) -->
-	<link rel="apple-touch-icon" href="icon.svg">
-	<!-- 状态栏颜色设为页眉的红色 -->
-	<meta name="apple-mobile-web-app-status-bar-style" content="#d34036">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <style>
-        /* 优化3：对比度优化。使用稍深的红色确保文字清晰 */
         :root {
-            --primary-red: #B22222; 
+            --primary-red: #B22222;
             --text-white: #FFFFFF;
+            --card-bg: rgba(255, 255, 255, 0.15);
         }
         body {
             margin: 0;
@@ -29,87 +23,166 @@
             color: var(--text-white);
             display: flex;
             justify-content: center;
-            align-items: center;
             min-height: 100vh;
         }
-        /* 优化4：布局稳定性，防止 CLS (布局抖动) */
-        #app {
+        main {
             width: 100%;
-            max-width: 500px;
+            max-width: 480px;
             padding: 20px;
             box-sizing: border-box;
+        }
+        /* 顶部详细展示区 */
+        .info-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 24px;
             text-align: center;
-            min-height: 80vh; /* 预留高度 */
+            backdrop-filter: blur(12px);
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            min-height: 240px;
         }
-        .date-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 30px 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        #solarDateDisplay { font-size: 1.1rem; opacity: 0.9; margin-bottom: 8px; }
+        #lunarDateDisplay { font-size: 2.8rem; font-weight: 800; margin: 12px 0; }
+        #ganzhiDisplay { font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 20px; opacity: 0.85; }
+        .yiji-container {
+            display: flex;
+            justify-content: space-around;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.2);
         }
-        /* 增加交互元素的无障碍标签样式 */
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            overflow: hidden;
-            clip: rect(0,0,0,0);
+        .yiji-group strong { display: block; font-size: 1.2rem; margin-bottom: 4px; }
+        .yiji-group span { font-size: 0.9rem; max-width: 140px; display: block; height: 3em; overflow: hidden; }
+
+        /* 日历控制 */
+        .cal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
         }
+        button {
+            background: var(--card-bg);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        button:active { background: rgba(255,255,255,0.3); }
+
+        /* 日历网格 */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            background: var(--card-bg);
+            padding: 12px;
+            border-radius: 18px;
+            min-height: 340px;
+        }
+        .week-head { text-align: center; font-size: 0.75rem; opacity: 0.6; padding-bottom: 10px; }
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .day-cell .solar { font-size: 1.1rem; font-weight: 500; }
+        .day-cell .lunar { font-size: 0.65rem; opacity: 0.7; }
+        .day-cell.active { background: white; color: var(--primary-red); font-weight: bold; }
+        .day-cell.today { border: 1.5px solid rgba(255,255,255,0.6); }
+        .day-cell.other-month { opacity: 0.2; }
     </style>
 </head>
 <body>
-    <!-- 优化5：添加 main 语义化标签 -->
-    <main id="app">
-        <div class="date-card">
-            <h1 id="solarDate">加载中...</h1>
-            <div id="lunarDate" style="font-size: 1.5rem; margin: 10px 0;"></div>
-            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
-            <div id="almanacDetails">
-                <p id="ganzhi"></p>
-                <div style="display: flex; justify-content: space-around; margin-top: 20px;">
-                    <div><strong style="color: #90EE90;">宜</strong><p id="yi"></p></div>
-                    <div><strong style="color: #FFB6C1;">忌</strong><p id="ji"></p></div>
-                </div>
+    <main>
+        <section class="info-card">
+            <div id="solarDateDisplay">正在加载日历...</div>
+            <div id="lunarDateDisplay">--</div>
+            <div id="ganzhiDisplay">--</div>
+            <div class="yiji-container">
+                <div class="yiji-group"><strong style="color: #90EE90;">宜</strong><span id="yiDisplay"></span></div>
+                <div class="yiji-group"><strong style="color: #FFB6C1;">忌</strong><span id="jiDisplay"></span></div>
             </div>
+        </section>
+
+        <nav class="cal-header">
+            <button onclick="moveMonth(-1)" aria-label="上个月">上个月</button>
+            <h2 id="currentMonthYear" style="margin:0; font-size:1.2rem;">2024年 1月</h2>
+            <button onclick="moveMonth(1)" aria-label="下个月">下个月</button>
+        </nav>
+
+        <div class="calendar-grid" id="calendarGrid">
+            <div class="week-head">日</div><div class="week-head">一</div><div class="week-head">二</div>
+            <div class="week-head">三</div><div class="week-head">四</div><div class="week-head">五</div><div class="week-head">六</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="resetToToday()" style="background: white; color: var(--primary-red); font-weight: bold;">回到今天</button>
         </div>
     </main>
 
-    <!-- 优化6：使用 defer 避免阻塞渲染，这是解决 9.2s 加载的关键 -->
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js" defer></script>
     <script defer>
-        // 确保页面加载完成后执行
+        let viewDate = new Date();
+        let selectedDate = new Date();
+
         window.addEventListener('DOMContentLoaded', () => {
-            updateAlmanac();
-            registerSW();
+            const checkReady = setInterval(() => {
+                if (typeof Lunar !== 'undefined') {
+                    clearInterval(checkReady);
+                    render();
+                    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+                }
+            }, 50);
         });
 
-        function updateAlmanac() {
-            // 兼容性检查
-            if (typeof Lunar === 'undefined') {
-                setTimeout(updateAlmanac, 100);
-                return;
-            }
-            const date = new Date();
-            const solar = Solar.fromDate(date);
-            const lunar = Lunar.fromDate(date);
+        function render() {
+            // 更新详情
+            const solar = Solar.fromDate(selectedDate);
+            const lunar = Lunar.fromDate(selectedDate);
+            document.getElementById('solarDateDisplay').innerText = `${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日 星期${solar.getWeekInChinese()}`;
+            document.getElementById('lunarDateDisplay').innerText = `${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+            document.getElementById('ganzhiDisplay').innerText = `${lunar.getYearInGanZhi()}年 · ${lunar.getMonthInGanZhi()}月 · ${lunar.getDayInGanZhi()}日`;
+            document.getElementById('yiDisplay').innerText = lunar.getDayYi().slice(0, 5).join(' ') || '诸事不宜';
+            document.getElementById('jiDisplay').innerText = lunar.getDayJi().slice(0, 5).join(' ') || '诸事无忌';
 
-            document.getElementById('solarDate').innerText = `${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日`;
-            document.getElementById('lunarDate').innerText = `${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
-            document.getElementById('ganzhi').innerText = `${lunar.getYearInGanZhi()}${lunar.getYearShengXiao()}年 · ${lunar.getMonthInGanZhi()}月 · ${lunar.getDayInGanZhi()}日`;
-            document.getElementById('yi').innerText = lunar.getDayYi().join(' ') || '诸事不宜';
-            document.getElementById('ji').innerText = lunar.getDayJi().join(' ') || '诸事无忌';
+            // 更新日历
+            const grid = document.getElementById('calendarGrid');
+            const heads = Array.from(grid.querySelectorAll('.week-head'));
+            grid.innerHTML = '';
+            heads.forEach(h => grid.appendChild(h));
+
+            const y = viewDate.getFullYear(), m = viewDate.getMonth();
+            document.getElementById('currentMonthYear').innerText = `${y}年 ${m + 1}月`;
+
+            const firstDay = new Date(y, m, 1).getDay();
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            const today = new Date();
+
+            for (let i = 0; i < firstDay; i++) grid.appendChild(Object.assign(document.createElement('div'), {className: 'day-cell other-month'}));
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(y, m, d);
+                const l = Lunar.fromDate(dateObj);
+                const cell = document.createElement('div');
+                cell.className = `day-cell ${isSame(dateObj, selectedDate) ? 'active' : ''} ${isSame(dateObj, today) ? 'today' : ''}`;
+                const lunarTxt = l.getDayInChinese() === '初一' ? l.getMonthInChinese()+'月' : l.getDayInChinese();
+                cell.innerHTML = `<span class="solar">${d}</span><span class="lunar">${lunarTxt}</span>`;
+                cell.onclick = () => { selectedDate = dateObj; render(); };
+                grid.appendChild(cell);
+            }
         }
 
-        async function registerSW() {
-            if ('serviceWorker' in navigator) {
-                try {
-                    await navigator.serviceWorker.register('./sw.js');
-                } catch (e) {
-                    console.log('SW registration failed');
-                }
-            }
-        }
+        function moveMonth(s) { viewDate.setMonth(viewDate.getMonth() + s); render(); }
+        function resetToToday() { viewDate = new Date(); selectedDate = new Date(); render(); }
+        function isSame(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate(); }
     </script>
 </body>
 </html>
