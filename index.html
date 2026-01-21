@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
     <title>万年历</title>
     
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet">
     
-	<!-- 在 <head> 中添加或替换 -->
-	<link rel="icon" href="icon.svg" type="image/svg+xml">
-	<link rel="apple-touch-icon" href="icons/icon-192.png">
     <style>
         :root {
             --brand-red: #E64340;    /* 朱砂红 */
@@ -32,7 +31,7 @@
             flex-direction: column;
         }
 
-        /* 顶部导航：绝对居中 */
+        /* 1. 顶部导航：绝对居中 */
         header {
             padding: calc(env(safe-area-inset-top) + 10px) 16px 5px;
             display: flex;
@@ -54,7 +53,7 @@
             background: none; cursor: pointer; font-weight: bold;
         }
 
-        /* 日历：周一为首 */
+        /* 2. 日历主体：周一为首 */
         .week-header {
             display: grid; grid-template-columns: repeat(7, 1fr);
             text-align: center; padding: 10px 0;
@@ -66,7 +65,6 @@
             grid-auto-rows: 1fr;
         }
 
-        /* 规格：18px / 14px */
         .day-cell {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             position: relative; cursor: pointer;
@@ -86,29 +84,41 @@
         .day-cell.active { color: #fff; }
         .day-cell.active .lunar { color: rgba(255,255,255,0.9); }
 
-        /* 底部详情：50/50 比例 */
+        /* 3. 底部详情：左右等宽 (50/50) 内容从顶渲染 */
         .drawer {
             height: 35%; background: #fff;
             border-top-left-radius: 24px; border-top-right-radius: 24px;
             padding: 15px 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
             display: flex; overflow: hidden;
         }
-        .drawer-left { flex: 1; border-right: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; padding-right: 15px; }
-        .drawer-right { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding-left: 15px; }
+        .drawer-left { 
+            flex: 1; border-right: 1px solid #eee; 
+            display: flex; flex-direction: column; 
+            justify-content: flex-start; /* 从顶部开始 */
+            padding-right: 10px; 
+        }
+        .drawer-right { 
+            flex: 1; 
+            display: flex; flex-direction: column; 
+            justify-content: flex-start; /* 从顶部开始 */
+            align-items: center; 
+            padding-left: 15px; 
+            overflow-y: auto;
+        }
 
         .solar-detail { font-size: 0.85rem; color: var(--text-sub); font-weight: 500; margin-bottom: 2px; }
         .gz-detail { font-size: 0.8rem; color: var(--text-sub); }
-        .lunar-big { font-size: 1.5rem; font-weight: bold; color: var(--brand-red); margin: 2px 0; }
-        .term-countdown { font-size: 0.75rem; color: var(--accent-gold); background: #fff9e6; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 6px; font-weight: bold; }
+        .lunar-big { font-size: 1.5rem; font-weight: bold; color: var(--brand-red); margin: 3px 0; }
+        .term-countdown { font-size: 0.75rem; color: var(--accent-gold); background: #fff9e6; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 8px; font-weight: bold; }
 
-        .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 4px 0; }
+        .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 5px 0; }
         .tag { font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; white-space: nowrap; }
         .tag-yi { background: #eafaf1; color: #2ecc71; border: 1px solid #d4efdf; }
         .tag-ji { background: #fdedec; color: #e74c3c; border: 1px solid #fadbd8; }
-        .section-label { font-size: 0.75rem; font-weight: bold; color: var(--text-sub); margin-bottom: 2px; }
-        .divider { width: 60%; border-top: 1px dashed #eee; margin: 8px 0; }
+        .section-label { font-size: 0.75rem; font-weight: bold; color: var(--text-sub); margin-top: 5px; margin-bottom: 2px; }
+        .divider { width: 60%; border-top: 1px dashed #eee; margin: 10px 0; }
 
-        /* 选择器面板 */
+        /* 选择器 */
         #pickerOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; }
         .picker-content { width: 100%; background: var(--bg-paper); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translateY(100%); } }
@@ -148,7 +158,7 @@
 
     <div class="drawer">
         <div class="drawer-left">
-            <div id="solarDetail" class="solar-detail">2026年1月21日</div>
+            <div id="solarDetail" class="solar-detail">--</div>
             <div id="gzInfo" class="gz-detail">--</div>
             <div id="lunarBig" class="lunar-big">--</div>
             <div id="sxInfo" style="font-size:0.85rem">--</div>
@@ -199,6 +209,7 @@
             initMonthGrid();
             render();
             initSwipe();
+            registerSW();
         };
 
         function render() {
@@ -287,8 +298,6 @@
                     const d2 = new Date(next.date.getFullYear(), next.date.getMonth(), next.date.getDate());
                     const diff = Math.round((d2 - d1) / 86400000);
                     el.innerText = `距离 [${next.name}] 还有 ${diff} 天`;
-                } else {
-                    el.innerText = "--";
                 }
             } catch (e) { el.innerText = "--"; }
         }
@@ -327,6 +336,12 @@
             const c = document.getElementById('calendarGrid');
             c.ontouchstart = e => startX = e.touches[0].clientX;
             c.ontouchend = e => { let diff = e.changedTouches[0].clientX - startX; if(Math.abs(diff)>50) moveMonth(diff>0?-1:1); };
+        }
+
+        async function registerSW() {
+            if ('serviceWorker' in navigator) {
+                try { await navigator.serviceWorker.register('./sw.js'); } catch (e) {}
+            }
         }
 
         function isSame(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate(); }
