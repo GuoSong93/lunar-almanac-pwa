@@ -1,5 +1,5 @@
 // sw.js 开头的 ASSETS 数组
-const CACHE_NAME = 'time-calendar-v2.1';
+const CACHE_NAME = 'time-calendar-v2.8';
 const ASSETS = [
   './',
   './index.html',
@@ -12,7 +12,22 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
+  self.skipWaiting();
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', e => {
